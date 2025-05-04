@@ -6,8 +6,6 @@ import startwithco.paymentservice.exception.notFound.NotFoundErrorResult;
 import startwithco.paymentservice.exception.notFound.NotFoundException;
 import startwithco.paymentservice.paymentOrder.domain.PaymentOrderEntity;
 
-import java.util.NoSuchElementException;
-
 @Repository
 @RequiredArgsConstructor
 public class PaymentOrderRepositoryImpl implements PaymentOrderRepository {
@@ -16,6 +14,11 @@ public class PaymentOrderRepositoryImpl implements PaymentOrderRepository {
     @Override
     public PaymentOrderEntity save(PaymentOrderEntity paymentOrder) {
         return repository.save(paymentOrder);
+    }
+
+    @Override
+    public PaymentOrderEntity saveAndFlush(PaymentOrderEntity paymentOrder) {
+        return repository.saveAndFlush(paymentOrder);
     }
 
     @Override

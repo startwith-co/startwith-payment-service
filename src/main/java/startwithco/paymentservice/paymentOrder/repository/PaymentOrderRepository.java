@@ -7,5 +7,7 @@ import java.util.Optional;
 public interface PaymentOrderRepository {
     PaymentOrderEntity save(PaymentOrderEntity paymentOrder);
 
+    PaymentOrderEntity saveAndFlush(PaymentOrderEntity paymentOrder);
+
     PaymentOrderEntity findByPaymentEventSeq(Long paymentEventSeq);
 }

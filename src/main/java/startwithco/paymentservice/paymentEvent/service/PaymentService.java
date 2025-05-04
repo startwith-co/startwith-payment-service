@@ -38,6 +38,11 @@ public class PaymentService {
 
     @Transactional
     public TossPaymentQueryResponseDto getTossPaymentQuery(Long solutionSeq, Long buyerSeq, Long sellerSeq) {
+        /*
+         * TODO
+         *  FeignClient 예외처리 어떻게?
+         *  solution-service는 404 -> payment-service는 500 문제
+         * */
         SolutionResponseFeignClientDto solutionDto = paymentEventFeignClient.getSolution(solutionSeq).data();
         String orderId = UUID.randomUUID().toString();
 
@@ -65,6 +70,10 @@ public class PaymentService {
 
     @Transactional
     public Mono<TossPaymentApprovalResponseDto> tossPaymentApproval(String paymentKey, String orderId, Long amount) {
+        /*
+         * TODO
+         *  테스트 필요
+         * */
         PaymentEventEntity paymentEventEntity = paymentRepository.findByOrderId(orderId);
         PaymentOrderEntity paymentOrderEntity = paymentOrderRepository.findByPaymentEventSeq(paymentEventEntity.getPaymentEventSeq());
 
@@ -84,7 +93,7 @@ public class PaymentService {
             kafkaTemplate.send(TOSS_PAYMENT_APPROVAL_TOPIC, String.valueOf(paymentEventEntity.getSolutionSeq()));
         } catch (Exception e) {
             paymentOrderEntity.updatePaymentOrderStatus(PaymentOrderStatus.FAILURE);
-            paymentOrderRepository.save(paymentOrderEntity);
+            paymentOrderRepository.saveAndFlush(paymentOrderEntity);
 
             throw new ServerException(ServerErrorResult.INTERNAL_SERVER_EXCEPTION);
         }
