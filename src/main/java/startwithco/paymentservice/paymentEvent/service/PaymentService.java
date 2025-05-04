@@ -1,9 +1,7 @@
 package startwithco.paymentservice.paymentEvent.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -14,15 +12,16 @@ import startwithco.paymentservice.exception.server.ServerErrorResult;
 import startwithco.paymentservice.exception.server.ServerException;
 import startwithco.paymentservice.executor.TossPaymentApprovalExecutor;
 import startwithco.paymentservice.paymentEvent.domain.PaymentEventEntity;
+import startwithco.paymentservice.paymentEvent.feignClient.PaymentEventFeignClient;
 import startwithco.paymentservice.paymentEvent.repository.PaymentRepository;
 import startwithco.paymentservice.paymentOrder.domain.PaymentOrderEntity;
 import startwithco.paymentservice.paymentOrder.domain.PaymentOrderStatus;
 import startwithco.paymentservice.paymentOrder.repository.PaymentOrderRepository;
 
-import java.util.Map;
+import java.util.UUID;
 
-import static startwithco.paymentservice.paymentEvent.dto.TossPaymentResponseDto.TossPaymentApprovalResponseDto;
-import static startwithco.paymentservice.topic.ConsumerTopic.TOSS_PAYMENT_QUERY_TOPIC;
+import static startwithco.paymentservice.paymentEvent.dto.PaymentResponseDto.*;
+import static startwithco.paymentservice.paymentEvent.dto.PaymentResponseDto.TossPaymentApprovalResponseDto;
 import static startwithco.paymentservice.topic.ProducerTopic.TOSS_PAYMENT_APPROVAL_TOPIC;
 
 @Service
@@ -32,50 +31,36 @@ public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final PaymentOrderRepository paymentOrderRepository;
 
+    private final PaymentEventFeignClient paymentEventFeignClient;
+
     private final TossPaymentApprovalExecutor tossPaymentApprovalExecutor;
-    private final ObjectMapper objectMapper = new ObjectMapper();
     private final KafkaTemplate<String, String> kafkaTemplate;
 
     @Transactional
-    @KafkaListener(topics = TOSS_PAYMENT_QUERY_TOPIC, groupId = "group-01")
-    public void savePaymentEntity(String event) {
-        try {
-            Map<String, Object> payload = objectMapper.readValue(event, Map.class);
-            Long solutionSeq = ((Number) payload.get("solutionSeq")).longValue();
-            Long buyerSeq = ((Number) payload.get("buyerSeq")).longValue();
-            Long sellerSeq = ((Number) payload.get("sellerSeq")).longValue();
-            Long amount = ((Number) payload.get("amount")).longValue();
-            String orderId = (String) payload.get("orderId");
-            String orderName = (String) payload.get("orderName");
+    public TossPaymentQueryResponseDto getTossPaymentQuery(Long solutionSeq, Long buyerSeq, Long sellerSeq) {
+        SolutionResponseFeignClientDto solutionDto = paymentEventFeignClient.getSolution(solutionSeq).data();
+        String orderId = UUID.randomUUID().toString();
 
-            PaymentEventEntity paymentEventEntity = paymentRepository.save(
-                    PaymentEventEntity.builder()
-                            .solutionSeq(solutionSeq)
-                            .amount(amount)
-                            .orderId(orderId)
-                            .orderName(orderName)
-                            .build()
-            );
+        PaymentEventEntity paymentEventEntity = paymentRepository.save(
+                PaymentEventEntity.builder()
+                        .solutionSeq(solutionSeq)
+                        .amount(solutionDto.amount())
+                        .orderId(orderId)
+                        .orderName(solutionDto.solutionName())
+                        .build()
+        );
 
-            paymentOrderRepository.save(
-                    PaymentOrderEntity.builder()
-                            .paymentEventSeq(paymentEventEntity.getPaymentEventSeq())
-                            .paymentOrderStatus(PaymentOrderStatus.NOT_STARTED)
-                            .amount(amount)
-                            .buyerSeq(buyerSeq)
-                            .sellerSeq(sellerSeq)
-                            .build()
-            );
+        paymentOrderRepository.save(
+                PaymentOrderEntity.builder()
+                        .paymentEventSeq(paymentEventEntity.getPaymentEventSeq())
+                        .paymentOrderStatus(PaymentOrderStatus.NOT_STARTED)
+                        .amount(solutionDto.amount())
+                        .buyerSeq(buyerSeq)
+                        .sellerSeq(sellerSeq)
+                        .build()
+        );
 
-        } catch (Exception e) {
-            /*
-             * TODO
-             * solution-service는 제대로 Response 된 경우
-             * PaymentEvent 저장 시에 롤백 처리 되면 어떻게 처리 ?
-             */
-
-            throw new ServerException(ServerErrorResult.INTERNAL_SERVER_EXCEPTION);
-        }
+        return new TossPaymentQueryResponseDto(solutionDto.amount(), orderId, solutionDto.solutionName());
     }
 
     @Transactional

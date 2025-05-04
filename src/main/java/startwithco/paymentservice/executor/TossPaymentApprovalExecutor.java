@@ -18,7 +18,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.Map;
 
-import static startwithco.paymentservice.paymentEvent.dto.TossPaymentResponseDto.*;
+import static startwithco.paymentservice.paymentEvent.dto.PaymentResponseDto.*;
 
 @Slf4j
 @Component

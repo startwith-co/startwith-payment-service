@@ -1,6 +1,35 @@
 package startwithco.paymentservice.paymentEvent.dto;
 
-public class TossPaymentResponseDto {
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
+public class PaymentResponseDto {
+    public record BaseResponseFeignClient<T>(
+            int status,
+            T data
+    ) {}
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public record SolutionResponseFeignClientDto(
+            Long solutionSeq,
+            Long companySeq,
+            String solutionName,
+            String detailImage,
+            String description,
+            Long amount,
+            Long duration,
+            Long sellCount
+    ) {
+
+    }
+
+    public record TossPaymentQueryResponseDto(
+            Long amount,
+            String orderId,
+            String orderName
+    ) {
+
+    }
+
     public record TossPaymentApprovalResponseDto(
             String mId,
             String version,

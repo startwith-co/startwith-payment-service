@@ -13,13 +13,24 @@ import startwithco.paymentservice.exception.badRequest.BadRequestErrorResult;
 import startwithco.paymentservice.exception.badRequest.BadRequestException;
 import startwithco.paymentservice.paymentEvent.service.PaymentService;
 
-import static startwithco.paymentservice.paymentEvent.dto.TossPaymentResponseDto.*;
+import static startwithco.paymentservice.paymentEvent.dto.PaymentResponseDto.*;
 
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api/payment-service")
 public class PaymentController {
     private final PaymentService service;
+
+    @GetMapping("/toss-payment-query")
+    public ResponseEntity<BaseResponse<TossPaymentQueryResponseDto>> getTossPaymentQuery(
+            @RequestParam(name = "solutionSeq") Long solutionSeq,
+            @RequestParam(name = "buyerSeq") Long buyerSeq,
+            @RequestParam(name = "sellerSeq") Long sellerSeq
+    ) {
+        TossPaymentQueryResponseDto response = service.getTossPaymentQuery(solutionSeq, buyerSeq, sellerSeq);
+
+        return ResponseEntity.ok().body(BaseResponse.ofSuccess(HttpStatus.OK.value(), response));
+    }
 
     @GetMapping("/toss-payment-approval")
     public Mono<ResponseEntity<BaseResponse<TossPaymentApprovalResponseDto>>> tossPaymentApproval(
