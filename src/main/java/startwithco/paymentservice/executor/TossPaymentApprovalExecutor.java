@@ -38,6 +38,7 @@ public class TossPaymentApprovalExecutor {
         return tossPaymentWebClient.post()
                 .uri("/confirm")
                 .header(HttpHeaders.AUTHORIZATION, "Basic " + encodedSecretKey)
+                .header("Idempotency-Key", orderId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .bodyValue(Map.of(
                         "paymentKey", paymentKey,
