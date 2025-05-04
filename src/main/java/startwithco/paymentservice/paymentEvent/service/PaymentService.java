@@ -92,6 +92,10 @@ public class PaymentService {
 
             kafkaTemplate.send(TOSS_PAYMENT_APPROVAL_TOPIC, String.valueOf(paymentEventEntity.getSolutionSeq()));
         } catch (Exception e) {
+            /*
+             * TODO
+             *  승인되지 않았을 경우에 어떻게 처리?
+             * */
             paymentOrderEntity.updatePaymentOrderStatus(PaymentOrderStatus.FAILURE);
             paymentOrderRepository.saveAndFlush(paymentOrderEntity);
 
