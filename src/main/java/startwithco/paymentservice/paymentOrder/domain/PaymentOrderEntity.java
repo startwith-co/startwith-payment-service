@@ -55,6 +55,9 @@ public class PaymentOrderEntity extends BaseTimeEntity {
 
     public void updatePaymentOrderStatus(PaymentOrderStatus paymentOrderStatus) {
         this.paymentOrderStatus = paymentOrderStatus;
+    }
+
+    public void updateLedgerUpdated() {
         this.ledgerUpdated = true;
     }
 }

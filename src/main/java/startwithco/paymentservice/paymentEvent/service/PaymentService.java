@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.reactive.function.client.WebClientResponseException;
 import reactor.core.publisher.Mono;
 import startwithco.paymentservice.exception.badRequest.BadRequestErrorResult;
 import startwithco.paymentservice.exception.badRequest.BadRequestException;
@@ -75,55 +76,67 @@ public class PaymentService {
     @Transactional
     public Mono<TossPaymentApprovalResponseDto> tossPaymentApproval(String paymentKey, String orderId, Long amount) {
         /*
-         * TODO
-         *  테스트 필요
-         * */
+        * TODO
+        *  테스트 필요
+        * */
         PaymentEventEntity paymentEventEntity = paymentRepository.findByOrderId(orderId);
         PaymentOrderEntity paymentOrderEntity = paymentOrderRepository.findByPaymentEventSeq(paymentEventEntity.getPaymentEventSeq());
 
+        // 결제 승인 로직 진입 시 EXECUTING 상태로 변경
         paymentOrderEntity.updatePaymentOrderStatus(PaymentOrderStatus.EXECUTED);
         paymentOrderRepository.save(paymentOrderEntity);
 
-        try {
-            if (!paymentEventEntity.getAmount().equals(amount)) {
-                throw new BadRequestException(BadRequestErrorResult.AMOUNT_MISMATCH_BAD_REQUEST_EXCEPTION);
-            }
+        // 금액 불일치 시 바로 예외 처리
+        if (!paymentEventEntity.getAmount().equals(amount)) {
+            paymentOrderEntity.updatePaymentOrderStatus(PaymentOrderStatus.FAILURE);
+            paymentOrderRepository.save(paymentOrderEntity);
 
-            paymentEventEntity.updateTossPaymentApproval(paymentKey);
-            paymentRepository.save(paymentEventEntity);
+            throw new BadRequestException(BadRequestErrorResult.AMOUNT_MISMATCH_BAD_REQUEST_EXCEPTION);
+        }
 
-            ledgerRepository.save(
-                    LedgerEntity.builder()
+        return tossPaymentApprovalExecutor.executeApproval(paymentKey, orderId, amount)
+                .flatMap(response -> {
+                    // 결제 승인 성공 처리
+                    paymentEventEntity.updateTossPaymentApproval(paymentKey);
+                    paymentRepository.save(paymentEventEntity);
+
+                    // 이중 부기 방식으로 ledger에 기록
+                    ledgerRepository.save(LedgerEntity.builder()
                             .entryType(EntryType.DEBIT)
                             .orderId(orderId)
                             .debit(amount)
                             .credit(0L)
-                            .build()
-            );
-            ledgerRepository.save(
-                    LedgerEntity.builder()
+                            .build());
+
+                    ledgerRepository.save(LedgerEntity.builder()
                             .entryType(EntryType.CREDIT)
                             .orderId(orderId)
                             .debit(0L)
                             .credit(amount)
-                            .build()
-            );
+                            .build());
 
-            paymentOrderEntity.updatePaymentOrderStatus(PaymentOrderStatus.SUCCESS);
-            paymentOrderRepository.save(paymentOrderEntity);
+                    // 상태 SUCCESS로 변경
+                    paymentOrderEntity.updatePaymentOrderStatus(PaymentOrderStatus.SUCCESS);
+                    paymentOrderEntity.updateLedgerUpdated();
+                    paymentOrderRepository.save(paymentOrderEntity);
 
-            kafkaTemplate.send(TOSS_PAYMENT_APPROVAL_TOPIC, String.valueOf(paymentEventEntity.getSolutionSeq()));
-        } catch (Exception e) {
-            /*
-             * TODO
-             *  승인되지 않았을 경우에 어떻게 처리?
-             * */
-            paymentOrderEntity.updatePaymentOrderStatus(PaymentOrderStatus.FAILURE);
-            paymentOrderRepository.saveAndFlush(paymentOrderEntity);
+                    // 결제 승인 성공 메시지 발행
+                    kafkaTemplate.send(TOSS_PAYMENT_APPROVAL_TOPIC, String.valueOf(paymentEventEntity.getSolutionSeq()));
 
-            throw new ServerException(ServerErrorResult.INTERNAL_SERVER_EXCEPTION);
-        }
+                    return Mono.just(response);
+                })
+                .onErrorResume(ex -> {
+                    // 예외 유형에 따라 상태 처리
+                    if (ex instanceof WebClientResponseException) {
+                        // PG사 응답 오류 (ex: 잔액 부족, 유효하지 않은 카드 정보 등)
+                        paymentOrderEntity.updatePaymentOrderStatus(PaymentOrderStatus.FAILURE);
+                    } else {
+                        // 네트워크 오류 등 예기치 못한 예외
+                        paymentOrderEntity.updatePaymentOrderStatus(PaymentOrderStatus.UNKNOWN);
+                    }
 
-        return tossPaymentApprovalExecutor.executeApproval(paymentKey, orderId, amount);
+                    paymentOrderRepository.save(paymentOrderEntity);
+                    return Mono.error(new ServerException(ServerErrorResult.INTERNAL_SERVER_EXCEPTION));
+                });
     }
 }
