@@ -11,17 +11,20 @@ import startwithco.paymentservice.exception.badRequest.BadRequestException;
 import startwithco.paymentservice.exception.server.ServerErrorResult;
 import startwithco.paymentservice.exception.server.ServerException;
 import startwithco.paymentservice.executor.TossPaymentApprovalExecutor;
+import startwithco.paymentservice.ledger.domain.LedgerEntity;
+import startwithco.paymentservice.ledger.repository.LedgerRepository;
 import startwithco.paymentservice.paymentEvent.domain.PaymentEventEntity;
 import startwithco.paymentservice.paymentEvent.feignClient.PaymentEventFeignClient;
 import startwithco.paymentservice.paymentEvent.repository.PaymentRepository;
 import startwithco.paymentservice.paymentOrder.domain.PaymentOrderEntity;
-import startwithco.paymentservice.paymentOrder.domain.PaymentOrderStatus;
 import startwithco.paymentservice.paymentOrder.repository.PaymentOrderRepository;
 
 import java.util.UUID;
 
+import static startwithco.paymentservice.ledger.domain.LedgerEntity.*;
 import static startwithco.paymentservice.paymentEvent.dto.PaymentResponseDto.*;
 import static startwithco.paymentservice.paymentEvent.dto.PaymentResponseDto.TossPaymentApprovalResponseDto;
+import static startwithco.paymentservice.paymentOrder.domain.PaymentOrderEntity.*;
 import static startwithco.paymentservice.topic.ProducerTopic.TOSS_PAYMENT_APPROVAL_TOPIC;
 
 @Service
@@ -30,6 +33,7 @@ import static startwithco.paymentservice.topic.ProducerTopic.TOSS_PAYMENT_APPROV
 public class PaymentService {
     private final PaymentRepository paymentRepository;
     private final PaymentOrderRepository paymentOrderRepository;
+    private final LedgerRepository ledgerRepository;
 
     private final PaymentEventFeignClient paymentEventFeignClient;
 
@@ -87,6 +91,24 @@ public class PaymentService {
 
             paymentEventEntity.updateTossPaymentApproval(paymentKey);
             paymentRepository.save(paymentEventEntity);
+
+            ledgerRepository.save(
+                    LedgerEntity.builder()
+                            .entryType(EntryType.DEBIT)
+                            .orderId(orderId)
+                            .debit(amount)
+                            .credit(0L)
+                            .build()
+            );
+            ledgerRepository.save(
+                    LedgerEntity.builder()
+                            .entryType(EntryType.CREDIT)
+                            .orderId(orderId)
+                            .debit(0L)
+                            .credit(amount)
+                            .build()
+            );
+
             paymentOrderEntity.updatePaymentOrderStatus(PaymentOrderStatus.SUCCESS);
             paymentOrderRepository.save(paymentOrderEntity);
 

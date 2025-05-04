@@ -7,6 +7,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
+import startwithco.paymentservice.base.BaseTimeEntity;
 
 @Entity
 @Table(name = "PAYMENT_ORDER")
@@ -16,7 +17,7 @@ import org.hibernate.annotations.DynamicUpdate;
 @DynamicUpdate
 @Getter
 @Builder
-public class PaymentOrderEntity {
+public class PaymentOrderEntity extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "payment_order_seq")
@@ -44,7 +45,16 @@ public class PaymentOrderEntity {
     @Column(name = "seller_seq", nullable = false)
     private Long sellerSeq;
 
+    public enum PaymentOrderStatus {
+        NOT_STARTED,
+        EXECUTED,
+        FAILURE,
+        SUCCESS,
+        UNKNOWN;
+    }
+
     public void updatePaymentOrderStatus(PaymentOrderStatus paymentOrderStatus) {
         this.paymentOrderStatus = paymentOrderStatus;
+        this.ledgerUpdated = true;
     }
 }
