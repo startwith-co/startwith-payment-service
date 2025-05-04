@@ -1,8 +1,8 @@
-package startwithco.paymentservice.solutionPayment.repository;
+package startwithco.paymentservice.repository;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
-import startwithco.paymentservice.solutionPayment.domain.PaymentEntity;
+import startwithco.paymentservice.domain.PaymentEntity;
 
 @Repository
 @RequiredArgsConstructor

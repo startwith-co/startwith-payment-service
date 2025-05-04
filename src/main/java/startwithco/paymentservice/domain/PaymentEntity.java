@@ -1,4 +1,4 @@
-package startwithco.paymentservice.solutionPayment.domain;
+package startwithco.paymentservice.domain;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -21,6 +21,9 @@ public class PaymentEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "payment_seq")
     private Long paymentSeq;
+
+    @Column(name = "solution_seq", nullable = false)
+    private Long solutionSeq;
 
     @Column(name = "amount", nullable = false)
     private Long amount;
