@@ -126,6 +126,15 @@ public class PaymentService {
                     return Mono.just(response);
                 })
                 .onErrorResume(ex -> {
+                    /*
+                    * TODO
+                    *  TOSS에 맞게 EXCEPTION 처리 필요
+                    *  {
+                    *   "code": "NOT_FOUND_PAYMENT",
+                    *   "message": "존재하지 않는 결제 입니다."
+                    *  }
+                    * */
+
                     // 예외 유형에 따라 상태 처리
                     if (ex instanceof WebClientResponseException) {
                         // PG사 응답 오류 (ex: 잔액 부족, 유효하지 않은 카드 정보 등)
