@@ -1,4 +1,4 @@
-package startwithco.paymentservice.controller;
+package startwithco.paymentservice.paymentEvent.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -11,9 +11,9 @@ import reactor.core.publisher.Mono;
 import startwithco.paymentservice.base.BaseResponse;
 import startwithco.paymentservice.exception.badRequest.BadRequestErrorResult;
 import startwithco.paymentservice.exception.badRequest.BadRequestException;
-import startwithco.paymentservice.service.PaymentService;
+import startwithco.paymentservice.paymentEvent.service.PaymentService;
 
-import static startwithco.paymentservice.dto.TossPaymentResponseDto.*;
+import static startwithco.paymentservice.paymentEvent.dto.TossPaymentResponseDto.*;
 
 @RestController
 @RequiredArgsConstructor

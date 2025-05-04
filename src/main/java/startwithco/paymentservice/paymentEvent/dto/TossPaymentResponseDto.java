@@ -1,4 +1,4 @@
-package startwithco.paymentservice.dto;
+package startwithco.paymentservice.paymentEvent.dto;
 
 public class TossPaymentResponseDto {
     public record TossPaymentApprovalResponseDto(

@@ -1,4 +1,4 @@
-package startwithco.paymentservice.domain;
+package startwithco.paymentservice.paymentEvent.domain;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -16,11 +16,11 @@ import org.hibernate.annotations.DynamicUpdate;
 @DynamicUpdate
 @Getter
 @Builder
-public class PaymentEntity {
+public class PaymentEventEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "payment_seq")
-    private Long paymentSeq;
+    @Column(name = "payment_event_seq")
+    private Long paymentEventSeq;
 
     @Column(name = "solution_seq", nullable = false)
     private Long solutionSeq;
@@ -33,4 +33,15 @@ public class PaymentEntity {
 
     @Column(name = "order_name", nullable = false)
     private String orderName;
+
+    @Column(name = "payment_key", nullable = true)
+    private String paymentKey;
+
+    @Column(name = "is_payment_done", columnDefinition = "BOOLEAN DEFAULT FALSE")
+    private Boolean isPaymentDone = false;
+
+    public void updateTossPaymentApproval(String paymentKey) {
+        isPaymentDone = true;
+        this.paymentKey = paymentKey;
+    }
 }
