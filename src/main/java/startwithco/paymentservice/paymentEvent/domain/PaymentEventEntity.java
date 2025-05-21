@@ -2,47 +2,51 @@ package startwithco.paymentservice.paymentEvent.domain;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 import startwithco.paymentservice.base.BaseTimeEntity;
 
 @Entity
-@Table(name = "PAYMENT")
+@Table(name = "PAYMENT_EVENT_ENTITY")
 @AllArgsConstructor
 @NoArgsConstructor
 @DynamicInsert
 @DynamicUpdate
 @Getter
-@Builder
+@SuperBuilder
 public class PaymentEventEntity extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "payment_event_seq")
     private Long paymentEventSeq;
 
+    @Column(name = "vendor_seq", nullable = false)
+    private Long vendorSeq;
+
+    @Column(name = "consumer_seq", nullable = false)
+    private Long consumerSeq;
+
     @Column(name = "solution_seq", nullable = false)
     private Long solutionSeq;
+
+    @Column(name = "solution_name", nullable = false)
+    private String solutionName;
 
     @Column(name = "amount", nullable = false)
     private Long amount;
 
-    @Column(name = "order_id", nullable = false)
-    private String orderId;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sell_type", nullable = false)
+    private SELL_TYPE sellType;
 
-    @Column(name = "order_name", nullable = false)
-    private String orderName;
-
-    @Column(name = "payment_key", nullable = true)
-    private String paymentKey;
-
-    @Column(name = "is_payment_done", columnDefinition = "BOOLEAN DEFAULT FALSE")
-    private Boolean isPaymentDone = false;
-
-    public void updateTossPaymentApproval(String paymentKey) {
-        isPaymentDone = true;
-        this.paymentKey = paymentKey;
+    public enum SELL_TYPE {
+        SINGLE,
+        SUBSCRIBE
     }
+
+    @Column(name = "duration", nullable = false)
+    private Long duration;
 }

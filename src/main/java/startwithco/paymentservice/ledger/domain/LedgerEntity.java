@@ -2,21 +2,21 @@ package startwithco.paymentservice.ledger.domain;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.experimental.SuperBuilder;
 import org.hibernate.annotations.DynamicInsert;
 import org.hibernate.annotations.DynamicUpdate;
 import startwithco.paymentservice.base.BaseTimeEntity;
 
 @Entity
-@Table(name = "LEDGER")
+@Table(name = "LEDGER_ENTITY")
 @AllArgsConstructor
 @NoArgsConstructor
 @DynamicInsert
 @DynamicUpdate
 @Getter
-@Builder
+@SuperBuilder
 public class LedgerEntity extends BaseTimeEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
